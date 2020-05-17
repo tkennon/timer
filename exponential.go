@@ -12,7 +12,11 @@ type exponential struct {
 
 func (e *exponential) next() time.Duration {
 	current := e.current
-	e.current = time.Duration(float32(e.current) * e.multiplier)
+	c := float32(e.current) * e.multiplier
+	if e.multiplier > 0 && c > 0 || e.multiplier < 0 && c < 0 {
+		// Only update if there has been no nmerical overflow.
+		e.current = time.Duration(c)
+	}
 	return current
 }
 

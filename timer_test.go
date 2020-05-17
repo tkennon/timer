@@ -174,11 +174,11 @@ func TestWithMinInterval(t *testing.T) {
 	}
 }
 
-func TestWithCumulativeDuration(t *testing.T) {
+func TestWithMaxDuration(t *testing.T) {
 	fakeClock := newClock()
 	timeAfter = fakeClock.After
 
-	cumulative := time.Minute
+	maxDuration := time.Minute
 	tests := []struct {
 		timer *Timer
 	}{
@@ -187,7 +187,7 @@ func TestWithCumulativeDuration(t *testing.T) {
 		{NewExponential(time.Second, 2.0)},
 	}
 	for _, tt := range tests {
-		timer := tt.timer.WithCumulativeDuration(cumulative)
+		timer := tt.timer.WithMaxDuration(maxDuration)
 		for {
 			c, ok := timer.Start()
 			if ok {

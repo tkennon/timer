@@ -21,15 +21,18 @@ type interval interface {
 
 // Timer is an object that sleeps.
 type Timer struct {
-	ctx         context.Context
-	interval    interval
-	total       time.Duration
-	jitter      float64
-	minInterval time.Duration
-	maxInterval time.Duration
-	cumDuration time.Duration
-	stop        chan struct{}
-	f           func()
+	ctx            context.Context
+	interval       interval
+	total          time.Duration
+	jitter         float64
+	minIntervalSet bool
+	minInterval    time.Duration
+	maxIntervalSet bool
+	maxInterval    time.Duration
+	maxDurationSet bool
+	maxDuration    time.Duration
+	stop           chan struct{}
+	f              func()
 }
 
 func newTimer(interval interval) *Timer {
@@ -56,20 +59,23 @@ func (t *Timer) WithJitter(fraction float64) *Timer {
 // WithMinInterval sets the minimum interval between times the timer fires.
 func (t *Timer) WithMinInterval(d time.Duration) *Timer {
 	t.minInterval = d
+	t.minIntervalSet = true
 	return t
 }
 
 // WithMaxInterval sets the maximum interval between times the timer fires.
 func (t *Timer) WithMaxInterval(d time.Duration) *Timer {
 	t.maxInterval = d
+	t.maxIntervalSet = true
 	return t
 }
 
-// WithCumulativeDuration sets the cumulative total duration the timer will run
-// for over successive calls to Start. Once the maximum duration is reached,
+// WithMaxDuration sets the maxiumum cumulative total duration the timer will
+// run for over successive calls to Start. Once the maximum duration is reached,
 // calls to start will fail.
-func (t *Timer) WithCumulativeDuration(d time.Duration) *Timer {
-	t.cumDuration = d
+func (t *Timer) WithMaxDuration(d time.Duration) *Timer {
+	t.maxDuration = d
+	t.maxDurationSet = true
 	return t
 }
 
@@ -80,37 +86,45 @@ func (t *Timer) WithContext(ctx context.Context) *Timer {
 	return t
 }
 
-// WithFunc will execute f in its own goroutine after the timer has expired. The
-// running of f can be stopped by Stopping the timer.
+// WithFunc will execute f in its own goroutine after the timer has expired. To
+// prevent running f, the timer must be stopped before f is invoked.
 func (t *Timer) WithFunc(f func()) *Timer {
 	t.f = f
 	return t
 }
 
-// Start starts the timer. The interval the timer runs for is determined by the
-// type of the timer: e.g. linear, exponential etc. Successive calls to Start
-// will return channels that fire for different intervals. If it returns true,
-// it returns a channel that will return the time of timer expiry, otherwise it
-// returns nil. It will return nil, false if the timer
+// Start starts the timer. If it returns true, the returned channel will send
+// the current time after an interval. It returns (nil, false) if the timer
+// could not be started due to restrictions imposed in the timer config (e.g.
+// maximum duration reached). Successive calls to Start will return channels
+// that fire for different intervals. The difference in the intervals is
+// determiend by the type of time: e.g. linear or exponential etc.
 func (t *Timer) Start() (<-chan time.Time, bool) {
+	// Sanity check the min/max intervals.
+	if t.minIntervalSet && t.maxIntervalSet {
+		if t.minInterval > t.maxInterval {
+			return nil, false
+		}
+	}
+
+	// Get the next interval.
 	next := t.interval.next()
 
 	// Add jitter.
-	jitter := time.Duration(t.jitter*magnitude()) * next
-	next = next + jitter
+	next += time.Duration(t.jitter*magnitude()) * next
 
 	// Floor a single interval.
-	if next < t.minInterval {
+	if t.minIntervalSet && next < t.minInterval {
 		next = t.minInterval
 	}
 
 	// Cap a single interval.
-	if t.maxInterval.Nanoseconds() > 0 && next > t.maxInterval {
+	if t.maxIntervalSet && next > t.maxInterval {
 		next = t.maxInterval
 	}
 
 	// Cap the sum of all intervals.
-	if t.cumDuration.Nanoseconds() > 0 && t.total+next > t.cumDuration {
+	if t.maxDurationSet && t.total+next > t.maxDuration {
 		return nil, false
 	}
 	t.total += next
@@ -134,7 +148,8 @@ func (t *Timer) Start() (<-chan time.Time, bool) {
 	return ch, true
 }
 
-// Reset resets the timer to its initial interval.
+// Reset resets the timer to its initial interval, but retains all timer
+// configuration (such as jitter, max/min intervals etc).
 func (t *Timer) Reset() {
 	t.interval.reset()
 }
