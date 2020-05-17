@@ -2,16 +2,28 @@ package timer
 
 import (
 	"context"
+	"errors"
 	"math/rand"
 	"time"
 )
 
+// Functions stubbed out during testing.
 var (
-	// The function that does the actual sleeping should be stubbed during
-	// testing.
+	// timeAfter does the actual sleeping.
 	timeAfter = time.After
-	// magnitude returns a uniformly random number between [-1.0, 1.0).
+	// magnitude returns a uniformly random number in the range [-1.0, 1.0).
 	magnitude = func() float64 { return 1.0 - 2.0*rand.Float64() }
+)
+
+// Errors returned by the timer package.
+var (
+	// ErrMaxDurationElapsed is returned from (*Timer).Start() when the maximum
+	// cumulative timer duration has elapsed.
+	ErrMaxDurationElapsed = errors.New("maximum timer duration elapsed")
+	// ErrInvalidSettings is returned from (*Timer).Start() when invalid timer
+	// settings are detected; such as if the minimum duration had been set to
+	// greater than the maximum duration.
+	ErrInvalidSettings = errors.New("invalid timer settings")
 )
 
 type interval interface {
@@ -93,17 +105,17 @@ func (t *Timer) WithFunc(f func()) *Timer {
 	return t
 }
 
-// Start starts the timer. If it returns true, the returned channel will send
-// the current time after an interval. It returns (nil, false) if the timer
-// could not be started due to restrictions imposed in the timer config (e.g.
-// maximum duration reached). Successive calls to Start will return channels
-// that fire for different intervals. The difference in the intervals is
-// determiend by the type of time: e.g. linear or exponential etc.
-func (t *Timer) Start() (<-chan time.Time, bool) {
+// Start starts the timer. The returned channel will send the current time after
+// an interval has elapsed. It returns an error if the timer could not be
+// started due to restrictions imposed in the timer config (e.g. maximum
+// duration reached). Successive calls to Start will return channels that fire
+// for different intervals. The difference in the intervals is determiend by the
+// type of time: e.g. linear or exponential etc.
+func (t *Timer) Start() (<-chan time.Time, error) {
 	// Sanity check the min/max intervals.
 	if t.minIntervalSet && t.maxIntervalSet {
 		if t.minInterval > t.maxInterval {
-			return nil, false
+			return nil, ErrInvalidSettings
 		}
 	}
 
@@ -125,7 +137,7 @@ func (t *Timer) Start() (<-chan time.Time, bool) {
 
 	// Cap the sum of all intervals.
 	if t.maxDurationSet && t.total+next > t.maxDuration {
-		return nil, false
+		return nil, ErrMaxDurationElapsed
 	}
 	t.total += next
 
@@ -145,7 +157,7 @@ func (t *Timer) Start() (<-chan time.Time, bool) {
 		}
 	}()
 
-	return ch, true
+	return ch, nil
 }
 
 // Reset resets the timer to its initial interval, but retains all timer

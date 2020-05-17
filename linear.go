@@ -4,8 +4,8 @@ import "time"
 
 type linear struct {
 	initial   time.Duration
-	increment time.Duration
 	current   time.Duration
+	increment time.Duration
 }
 
 func (l *linear) next() time.Duration {
@@ -22,7 +22,7 @@ func (l *linear) reset() {
 func NewLinear(initial, increment time.Duration) *Timer {
 	return newTimer(&linear{
 		initial:   initial,
-		increment: increment,
 		current:   initial,
+		increment: increment,
 	})
 }

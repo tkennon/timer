@@ -51,8 +51,8 @@ func TestConstant(t *testing.T) {
 	constant := NewConstant(time.Second)
 	for trials := 0; trials < 2; trials++ {
 		for i := 0; i < 100; i++ {
-			c, ok := constant.Start()
-			require.True(t, ok)
+			c, err := constant.Start()
+			require.NoError(t, err)
 			assert.NotEmpty(t, <-c)
 			assert.Equal(t, time.Second, fakeClock.next)
 		}
@@ -68,8 +68,8 @@ func TestLinear(t *testing.T) {
 	linear := NewLinear(initial, increment)
 	for trials := 0; trials < 2; trials++ {
 		for i := 0; i < 100; i++ {
-			c, ok := linear.Start()
-			require.True(t, ok)
+			c, err := linear.Start()
+			require.NoError(t, err)
 			assert.NotEmpty(t, <-c)
 			assert.Equal(t, initial+time.Duration(i)*increment, fakeClock.next)
 		}
@@ -88,8 +88,8 @@ func TestExponential(t *testing.T) {
 	exponential := NewExponential(initial, exponent)
 	for trials := 0; trials < 2; trials++ {
 		for i := 0; i < 100; i++ {
-			c, ok := exponential.Start()
-			require.True(t, ok)
+			c, err := exponential.Start()
+			require.NoError(t, err)
 			assert.NotEmpty(t, <-c)
 			expected := float64(initial) * math.Pow(float64(exponent), float64(i))
 			actual := float64(fakeClock.next)
@@ -119,8 +119,8 @@ func TestWithJitter(t *testing.T) {
 			timer := tt.timer.WithJitter(jitter)
 			timer.Reset()
 			fakePRNG.val = val
-			c, ok := timer.Start()
-			require.True(t, ok)
+			c, err := timer.Start()
+			require.NoError(t, err)
 			assert.NotEmpty(t, <-c)
 			assert.LessOrEqual(t, 0.0*float64(time.Second), float64(fakeClock.next))
 			assert.GreaterOrEqual(t, 2.0*float64(time.Second), float64(fakeClock.next))
@@ -143,8 +143,8 @@ func TestWithMaxInterval(t *testing.T) {
 	for _, tt := range tests {
 		timer := tt.timer.WithMaxInterval(maxInterval)
 		for i := 0; i < 100; i++ {
-			c, ok := timer.Start()
-			require.True(t, ok)
+			c, err := timer.Start()
+			require.NoError(t, err)
 			assert.NotEmpty(t, <-c)
 			assert.LessOrEqual(t, fakeClock.next.Nanoseconds(), maxInterval.Nanoseconds())
 		}
@@ -166,8 +166,8 @@ func TestWithMinInterval(t *testing.T) {
 	for _, tt := range tests {
 		timer := tt.timer.WithMinInterval(minInterval)
 		for i := 0; i < 100; i++ {
-			c, ok := timer.Start()
-			require.True(t, ok)
+			c, err := timer.Start()
+			require.NoError(t, err)
 			assert.NotEmpty(t, <-c)
 			assert.GreaterOrEqual(t, fakeClock.next.Nanoseconds(), minInterval.Nanoseconds())
 		}
@@ -189,15 +189,15 @@ func TestWithMaxDuration(t *testing.T) {
 	for _, tt := range tests {
 		timer := tt.timer.WithMaxDuration(maxDuration)
 		for {
-			c, ok := timer.Start()
-			if ok {
+			c, err := timer.Start()
+			if err == nil {
 				assert.NotEmpty(t, <-c)
 			} else {
 				break
 			}
 		}
-		c, ok := timer.Start()
-		require.False(t, ok)
+		c, err := timer.Start()
+		require.Error(t, err)
 		require.Empty(t, c)
 	}
 }
@@ -216,15 +216,15 @@ func TestWithContext(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		timer := tt.timer.WithContext(ctx)
 
-		c, ok := timer.Start()
-		require.True(t, ok)
+		c, err := timer.Start()
+		require.NoError(t, err)
 		assert.NotEmpty(t, <-c)
 
 		cancel()
 		fakeClock.fire = false
 
-		c, ok = timer.Start()
-		assert.True(t, ok)
+		c, err = timer.Start()
+		assert.NoError(t, err)
 		select {
 		case now := <-c:
 			t.Log("timer fired", now)
@@ -248,8 +248,8 @@ func TestWithFunc(t *testing.T) {
 	for _, tt := range tests {
 		done := make(chan struct{})
 		timer := tt.timer.WithFunc(func() { close(done) })
-		c, ok := timer.Start()
-		require.True(t, ok)
+		c, err := timer.Start()
+		require.NoError(t, err)
 		assert.NotEmpty(t, <-c)
 		<-done
 	}
@@ -267,17 +267,29 @@ func TestStop(t *testing.T) {
 		fakeClock := newClock()
 		timeAfter = fakeClock.After
 
-		_, ok := tt.timer.Start()
-		require.True(t, ok)
+		_, err := tt.timer.Start()
+		require.NoError(t, err)
 		stopped := tt.timer.Stop()
 		assert.False(t, stopped)
 
 		fakeClock.fire = false
 		time.Sleep(10 * time.Millisecond)
 
-		_, ok = tt.timer.Start()
-		require.True(t, ok)
+		_, err = tt.timer.Start()
+		require.NoError(t, err)
 		stopped = tt.timer.Stop()
 		assert.True(t, stopped)
 	}
+}
+
+func TestInvalidSettings(t *testing.T) {
+	fakeClock := newClock()
+	timeAfter = fakeClock.After
+
+	linear := NewConstant(time.Minute).
+		WithMaxInterval(time.Second).
+		WithMinInterval(time.Hour)
+
+	_, err := linear.Start()
+	require.Error(t, err)
 }

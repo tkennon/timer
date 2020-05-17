@@ -14,7 +14,7 @@ func (e *exponential) next() time.Duration {
 	current := e.current
 	c := float32(e.current) * e.multiplier
 	if e.multiplier > 0 && c > 0 || e.multiplier < 0 && c < 0 {
-		// Only update if there has been no nmerical overflow.
+		// Only update if there has been no numerical overflow.
 		e.current = time.Duration(c)
 	}
 	return current
