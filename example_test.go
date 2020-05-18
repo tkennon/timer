@@ -64,7 +64,7 @@ func ExampleNewExponential() {
 	// 16ms
 }
 
-func ExampleWithMinInterval() {
+func ExampleTimer_WithMinInterval() {
 	lin := timer.NewLinear(5*time.Millisecond, -time.Millisecond).WithMinInterval(3 * time.Millisecond)
 	if err := example(lin, time.Millisecond); err != nil {
 		panic(err)
@@ -78,7 +78,7 @@ func ExampleWithMinInterval() {
 	// 3ms
 }
 
-func ExampleWithMaxInterval() {
+func ExampleTimer_WithMaxInterval() {
 	lin := timer.NewLinear(time.Millisecond, time.Millisecond).WithMaxInterval(3 * time.Millisecond)
 	if err := example(lin, time.Millisecond); err != nil {
 		panic(err)
@@ -92,7 +92,7 @@ func ExampleWithMaxInterval() {
 	// 3ms
 }
 
-func ExampleWithMaxDuration() {
+func ExampleTimer_WithMaxDuration() {
 	exp := timer.NewExponential(time.Millisecond, 2.0).WithMaxDuration(10 * time.Millisecond)
 	err := example(exp, time.Millisecond)
 	fmt.Println(err)
@@ -104,7 +104,7 @@ func ExampleWithMaxDuration() {
 	// maximum timer duration elapsed
 }
 
-func ExampleWithContext() {
+func ExampleTimer_WithContext() {
 	ctx, cancel := context.WithCancel(context.Background())
 	con := timer.NewConstant(time.Millisecond).WithContext(ctx)
 	cancel()
@@ -123,7 +123,7 @@ func ExampleWithContext() {
 	// timer did not fire
 }
 
-func ExampleWithFunc() {
+func ExampleTimer_WithFunc() {
 	con := timer.NewConstant(time.Millisecond).WithFunc(func() {
 		fmt.Println("hello")
 	})
@@ -144,7 +144,7 @@ func ExampleWithFunc() {
 	// 1ms
 }
 
-func ExampleReset() {
+func ExampleTimer_Reset() {
 	exp := timer.NewExponential(time.Millisecond, 2.0)
 	if err := example(exp, time.Millisecond); err != nil {
 		panic(err)
@@ -170,7 +170,7 @@ func ExampleReset() {
 	// 16ms
 }
 
-func ExampleStop() {
+func ExampleTimer_Stop() {
 	con := timer.NewConstant(time.Millisecond)
 	fmt.Println("timer was running:", con.Stop())
 	c, err := con.Start()
