@@ -143,7 +143,9 @@ func (t *Timer) Start() (<-chan time.Time, error) {
 
 	// Asynchronously wait for the timer to expire.
 	ch := make(chan time.Time, 1)
+	started := make(chan struct{})
 	go func() {
+		close(started)
 		select {
 		case <-t.ctx.Done():
 			return
@@ -156,6 +158,7 @@ func (t *Timer) Start() (<-chan time.Time, error) {
 			ch <- now
 		}
 	}()
+	<-started
 
 	return ch, nil
 }

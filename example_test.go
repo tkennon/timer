@@ -145,9 +145,48 @@ func ExampleWithFunc() {
 }
 
 func ExampleReset() {
+	exp := timer.NewExponential(time.Millisecond, 2.0)
+	if err := example(exp, time.Millisecond); err != nil {
+		panic(err)
+	}
 
+	fmt.Println("resetting timer")
+	exp.Reset()
+	if err := example(exp, time.Millisecond); err != nil {
+		panic(err)
+	}
+
+	// Output:
+	// 1ms
+	// 2ms
+	// 4ms
+	// 8ms
+	// 16ms
+	// resetting timer
+	// 1ms
+	// 2ms
+	// 4ms
+	// 8ms
+	// 16ms
 }
 
 func ExampleStop() {
+	con := timer.NewConstant(time.Millisecond)
+	fmt.Println("timer was running:", con.Stop())
+	c, err := con.Start()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("timer was running:", con.Stop())
+	select {
+	case <-c:
+		fmt.Println("timer fired even after it was stopped")
+	case <-time.After(5 * time.Millisecond):
+		fmt.Println("timer did not fire after it was stopped")
+	}
 
+	// Output:
+	// timer was running: false
+	// timer was running: true
+	// timer did not fire after it was stopped
 }
