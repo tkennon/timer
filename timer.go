@@ -150,10 +150,10 @@ func (t *Timer) Start() (<-chan time.Time, error) {
 		case <-t.stop:
 			return
 		case now := <-timeAfter(next):
-			ch <- now
 			if t.f != nil {
 				t.f()
 			}
+			ch <- now
 		}
 	}()
 

@@ -46,6 +46,8 @@ func (p *prng) Float64() float64 {
 
 func TestConstant(t *testing.T) {
 	fakeClock := newClock()
+	ta := timeAfter
+	defer func() { timeAfter = ta }()
 	timeAfter = fakeClock.After
 
 	constant := NewConstant(time.Second)
@@ -62,6 +64,8 @@ func TestConstant(t *testing.T) {
 
 func TestLinear(t *testing.T) {
 	fakeClock := newClock()
+	ta := timeAfter
+	defer func() { timeAfter = ta }()
 	timeAfter = fakeClock.After
 
 	initial, increment := time.Second, time.Second
@@ -79,6 +83,8 @@ func TestLinear(t *testing.T) {
 
 func TestExponential(t *testing.T) {
 	fakeClock := newClock()
+	ta := timeAfter
+	defer func() { timeAfter = ta }()
 	timeAfter = fakeClock.After
 
 	// To avoid floating point errors in a large loop we must keep the exponent
@@ -102,8 +108,12 @@ func TestExponential(t *testing.T) {
 
 func TestWithJitter(t *testing.T) {
 	fakeClock := newClock()
+	ta := timeAfter
+	defer func() { timeAfter = ta }()
 	timeAfter = fakeClock.After
 	fakePRNG := newPRNG()
+	ma := magnitude
+	defer func() { magnitude = ma }()
 	magnitude = fakePRNG.Float64
 	jitter := 0.1
 
@@ -130,6 +140,8 @@ func TestWithJitter(t *testing.T) {
 
 func TestWithMaxInterval(t *testing.T) {
 	fakeClock := newClock()
+	ta := timeAfter
+	defer func() { timeAfter = ta }()
 	timeAfter = fakeClock.After
 
 	maxInterval := time.Minute
@@ -153,6 +165,8 @@ func TestWithMaxInterval(t *testing.T) {
 
 func TestWithMinInterval(t *testing.T) {
 	fakeClock := newClock()
+	ta := timeAfter
+	defer func() { timeAfter = ta }()
 	timeAfter = fakeClock.After
 
 	minInterval := time.Second
@@ -176,6 +190,8 @@ func TestWithMinInterval(t *testing.T) {
 
 func TestWithMaxDuration(t *testing.T) {
 	fakeClock := newClock()
+	ta := timeAfter
+	defer func() { timeAfter = ta }()
 	timeAfter = fakeClock.After
 
 	maxDuration := time.Minute
@@ -203,6 +219,9 @@ func TestWithMaxDuration(t *testing.T) {
 }
 
 func TestWithContext(t *testing.T) {
+	ta := timeAfter
+	defer func() { timeAfter = ta }()
+
 	tests := []struct {
 		timer *Timer
 	}{
@@ -236,6 +255,8 @@ func TestWithContext(t *testing.T) {
 
 func TestWithFunc(t *testing.T) {
 	fakeClock := newClock()
+	ta := timeAfter
+	defer func() { timeAfter = ta }()
 	timeAfter = fakeClock.After
 
 	tests := []struct {
@@ -256,6 +277,9 @@ func TestWithFunc(t *testing.T) {
 }
 
 func TestStop(t *testing.T) {
+	ta := timeAfter
+	defer func() { timeAfter = ta }()
+
 	tests := []struct {
 		timer *Timer
 	}{
@@ -284,6 +308,8 @@ func TestStop(t *testing.T) {
 
 func TestInvalidSettings(t *testing.T) {
 	fakeClock := newClock()
+	ta := timeAfter
+	defer func() { timeAfter = ta }()
 	timeAfter = fakeClock.After
 
 	linear := NewConstant(time.Minute).
