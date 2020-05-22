@@ -60,22 +60,24 @@ func newTimer(interval interval) *Timer {
 // WithJitter(0.2) is applied to an exponential timer that would otherwise fire
 // on 1, 2, 4, 8, ... seconds then the first timer will fire in between 0.8-1.2
 // seconds, and the second will fire between 1.6-2.4 seconds. The jitter
-// fraction may be greater than one, allowing the possible jittered timers to
-// fire immediately if the calculated interval with the jitter is less than
+// fraction may be greater than one, allowing the possiblity for jittered timers
+// to fire immediately if the calculated interval with the jitter is less than
 // zero.
 func (t *Timer) WithJitter(fraction float64) *Timer {
 	t.jitter = fraction
 	return t
 }
 
-// WithMinInterval sets the minimum interval between times the timer fires.
+// WithMinInterval sets the minimum interval between times the timer fires. This
+// is applied after jitter is applied.
 func (t *Timer) WithMinInterval(d time.Duration) *Timer {
 	t.minInterval = d
 	t.minIntervalSet = true
 	return t
 }
 
-// WithMaxInterval sets the maximum interval between times the timer fires.
+// WithMaxInterval sets the maximum interval between times the timer fires. This
+// is applied after jitter is applied.
 func (t *Timer) WithMaxInterval(d time.Duration) *Timer {
 	t.maxInterval = d
 	t.maxIntervalSet = true
@@ -98,8 +100,8 @@ func (t *Timer) WithContext(ctx context.Context) *Timer {
 	return t
 }
 
-// WithFunc will execute f in its own goroutine after the timer has expired. To
-// prevent running f, the timer must be stopped before f is invoked.
+// WithFunc will execute f in its own goroutine when the timer expires. To
+// prevent running f, the timer must be stopped before it fires.
 func (t *Timer) WithFunc(f func()) *Timer {
 	t.f = f
 	return t
@@ -110,7 +112,7 @@ func (t *Timer) WithFunc(f func()) *Timer {
 // started due to restrictions imposed in the timer config (e.g. maximum
 // duration reached). Successive calls to Start will return channels that fire
 // for different intervals. The difference in the intervals is determiend by the
-// type of time: e.g. linear or exponential etc.
+// type of timer: e.g. linear or exponential etc.
 func (t *Timer) Start() (<-chan time.Time, error) {
 	// Sanity check the min/max intervals.
 	if t.minIntervalSet && t.maxIntervalSet {

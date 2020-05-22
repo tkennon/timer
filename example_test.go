@@ -8,7 +8,7 @@ import (
 	"github.com/tkennon/timer"
 )
 
-func example(t *timer.Timer, round time.Duration) error {
+func runFiveTimes(t *timer.Timer) error {
 	for i := 0; i < 5; i++ {
 		then := time.Now()
 		c, err := t.Start()
@@ -16,7 +16,7 @@ func example(t *timer.Timer, round time.Duration) error {
 			return err
 		}
 		now := <-c
-		fmt.Println(now.Sub(then).Round(round))
+		fmt.Println(now.Sub(then).Round(time.Millisecond))
 	}
 
 	return nil
@@ -24,7 +24,7 @@ func example(t *timer.Timer, round time.Duration) error {
 
 func ExampleNewConstant() {
 	con := timer.NewConstant(time.Millisecond)
-	if err := example(con, time.Millisecond); err != nil {
+	if err := runFiveTimes(con); err != nil {
 		panic(err)
 	}
 
@@ -38,7 +38,7 @@ func ExampleNewConstant() {
 
 func ExampleNewLinear() {
 	lin := timer.NewLinear(time.Millisecond, time.Millisecond)
-	if err := example(lin, time.Millisecond); err != nil {
+	if err := runFiveTimes(lin); err != nil {
 		panic(err)
 	}
 
@@ -52,7 +52,7 @@ func ExampleNewLinear() {
 
 func ExampleNewExponential() {
 	exp := timer.NewExponential(time.Millisecond, 2.0)
-	if err := example(exp, time.Millisecond); err != nil {
+	if err := runFiveTimes(exp); err != nil {
 		panic(err)
 	}
 
@@ -66,7 +66,7 @@ func ExampleNewExponential() {
 
 func ExampleTimer_WithMinInterval() {
 	lin := timer.NewLinear(5*time.Millisecond, -time.Millisecond).WithMinInterval(3 * time.Millisecond)
-	if err := example(lin, time.Millisecond); err != nil {
+	if err := runFiveTimes(lin); err != nil {
 		panic(err)
 	}
 
@@ -80,7 +80,7 @@ func ExampleTimer_WithMinInterval() {
 
 func ExampleTimer_WithMaxInterval() {
 	lin := timer.NewLinear(time.Millisecond, time.Millisecond).WithMaxInterval(3 * time.Millisecond)
-	if err := example(lin, time.Millisecond); err != nil {
+	if err := runFiveTimes(lin); err != nil {
 		panic(err)
 	}
 
@@ -94,7 +94,7 @@ func ExampleTimer_WithMaxInterval() {
 
 func ExampleTimer_WithMaxDuration() {
 	exp := timer.NewExponential(time.Millisecond, 2.0).WithMaxDuration(10 * time.Millisecond)
-	err := example(exp, time.Millisecond)
+	err := runFiveTimes(exp)
 	fmt.Println(err)
 
 	// Output:
@@ -127,7 +127,7 @@ func ExampleTimer_WithFunc() {
 	con := timer.NewConstant(time.Millisecond).WithFunc(func() {
 		fmt.Println("hello")
 	})
-	if err := example(con, time.Millisecond); err != nil {
+	if err := runFiveTimes(con); err != nil {
 		panic(err)
 	}
 
@@ -146,13 +146,13 @@ func ExampleTimer_WithFunc() {
 
 func ExampleTimer_Reset() {
 	exp := timer.NewExponential(time.Millisecond, 2.0)
-	if err := example(exp, time.Millisecond); err != nil {
+	if err := runFiveTimes(exp); err != nil {
 		panic(err)
 	}
 
 	fmt.Println("resetting timer")
 	exp.Reset()
-	if err := example(exp, time.Millisecond); err != nil {
+	if err := runFiveTimes(exp); err != nil {
 		panic(err)
 	}
 
