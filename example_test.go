@@ -104,7 +104,7 @@ func ExampleTimer_WithMaxDuration() {
 	// maximum timer duration elapsed
 }
 
-func Example_Timer_WithContext() {
+func ExampleTimer_WithContext() {
 	ctx, cancel := context.WithCancel(context.Background())
 	con := timer.NewConstant(time.Millisecond).WithContext(ctx)
 	cancel()
